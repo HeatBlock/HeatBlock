@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeatBlock API Example</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .server-info {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .online {
+            border-left-color: #28a745;
+        }
+        .offline {
+            border-left-color: #dc3545;
+        }
+        .loading {
+            border-left-color: #ffc107;
+        }
+        .player-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .player {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        pre {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 HeatBlock API Example</h1>
+        <p>Enter a Minecraft server address to check its status using the HeatBlock API.</p>
+        
+        <div class="input-group">
+            <input type="text" id="serverInput" placeholder="Enter server address (e.g., hypixel.net)" value="hypixel.net">
+            <button onclick="checkServer()">Check Java Server</button>
+            <button onclick="checkBedrockServer()">Check Bedrock Server</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <h2>📖 How to Use</h2>
+        <ul>
+            <li>Enter any Minecraft server address (IP or domain)</li>
+            <li>Click "Check Java Server" for Java Edition servers</li>
+            <li>Click "Check Bedrock Server" for Bedrock Edition servers</li>
+            <li>View real-time server information including player count, version, and status</li>
+        </ul>
+        
+        <h2>🔌 API Endpoints</h2>
+        <pre><code>Java Edition:
+GET https://heatblock.esb.is-a.dev/api/status/{server}
+
+Bedrock Edition:
+GET https://heatblock.esb.is-a.dev/api/status/bedrock/{server}
+
+Server Icon (Java only):
+GET https://heatblock.esb.is-a.dev/api/png/{server}</code></pre>
+    </div>
+
+    <script>
+        async function checkServer() {
+            const serverInput = document.getElementById('serverInput');
+            const result = document.getElementById('result');
+            const server = serverInput.value.trim();
+            
+            if (!server) {
+                alert('Please enter a server address');
+                return;
+            }
+            
+            result.innerHTML = '<div class="server-info loading">🔄 Checking server status...</div>';
+            
+            try {
+                const response = await fetch(`https://heatblock.esb.is-a.dev/api/status/${server}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const playersList = data.players.list && data.players.list.length > 0 
+                        ? `<div class="player-list">
+                             <strong>Online Players:</strong><br>
+                             ${data.players.list.map(player => `<span class="player">${player.name}</span>`).join('')}
+                           </div>`
+                        : '';
+                    
+                    result.innerHTML = `
+                        <div class="server-info online">
+                            <h3>✅ ${server} is ONLINE</h3>
+                            <p><strong>Players:</strong> ${data.players.online}/${data.players.max}</p>
+                            <p><strong>Version:</strong> ${data.version.name} (Protocol: ${data.version.protocol})</p>
+                            <p><strong>Latency:</strong> ${data.latency}ms</p>
+                            <p><strong>Description:</strong> ${data.description_clean}</p>
+                            ${playersList}
+                            ${data.favicon ? `<p><strong>Server Icon:</strong> <img src="${data.favicon}" alt="Server Icon" style="width: 64px; height: 64px; image-rendering: pixelated;"></p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="server-info offline">
+                            <h3>❌ ${server} is OFFLINE</h3>
+                            <p><strong>Error:</strong> ${data.error.message}</p>
+                            <p><strong>Error Code:</strong> ${data.error.code}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="server-info offline">
+                        <h3>❌ Request Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function checkBedrockServer() {
+            const serverInput = document.getElementById('serverInput');
+            const result = document.getElementById('result');
+            const server = serverInput.value.trim();
+            
+            if (!server) {
+                alert('Please enter a server address');
+                return;
+            }
+            
+            result.innerHTML = '<div class="server-info loading">🔄 Checking Bedrock server status...</div>';
+            
+            try {
+                const response = await fetch(`https://heatblock.esb.is-a.dev/api/status/bedrock/${server}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = `
+                        <div class="server-info online">
+                            <h3>✅ ${server} (Bedrock) is ONLINE</h3>
+                            <p><strong>Players:</strong> ${data.playersOnline}/${data.playersMax}</p>
+                            <p><strong>Version:</strong> ${data.version} (Protocol: ${data.protocol})</p>
+                            <p><strong>Latency:</strong> ${data.latency}ms</p>
+                            <p><strong>MOTD:</strong> ${data.motd_clean}</p>
+                            <p><strong>Level Name:</strong> ${data.levelName}</p>
+                            <p><strong>Game Mode:</strong> ${data.gamemode}</p>
+                            <p><strong>Server ID:</strong> ${data.serverId}</p>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="server-info offline">
+                            <h3>❌ ${server} (Bedrock) is OFFLINE</h3>
+                            <p><strong>Error:</strong> ${data.error.message}</p>
+                            <p><strong>Error Code:</strong> ${data.error.code}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="server-info offline">
+                        <h3>❌ Request Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Allow Enter key to trigger check
+        document.getElementById('serverInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkServer();
+            }
+        });
+    </script>
+</body>
+</html>
